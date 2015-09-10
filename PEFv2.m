@@ -7,8 +7,8 @@ function [ performanceEF] = PEFv2( ...
     probFalseAlarm,...                      % channel sensing false alarm ratio (numSU * numChannel)
     probDistribution,...                    % channel resourse allocation probabilities (numSU * numChannel)
     busyToBusy,freeToFree,...               % PU activity transmission probabilities (1 * numChannel)
-    Ptarget,avgSNR,dopplerFeq,packetTime... % channel condition state parameters (numSU * numChannel)
-    )
+    Ptarget,avgSNR,dopplerFeq,packetTime,... % channel condition state parameters (numSU * numChannel)
+    a,g,numChannelState)
 % PEFv2 Calculate the performance evaluation function multi-user multi-channel
 %   debug version. parameter checked: ,numArrival,numInQueue,numDeparture,numLost,numReject,ProbMatrix,actualCap 
 %  change the way how channel is allocated.
@@ -52,11 +52,11 @@ end
 %% STEP 3: channel condition state channelConditionState(numSU * numChannel * Nsim) & serviceCap(numSU * numChannel * Nsim) & actualCap(numSU * numChannel * Nsim)
 % initial state
 channelConditionState   = ones(numSU,numChannel,Nsim);
-StateNum                = 6;
-StateToCap              = [2 4 6 9 12 18];  %[0.5 1 1.5 2.25 3 4.5]
+StateNum                = 7;
+StateToCap              = [0 2 4 6 9 12 18];  %[0.5 1 1.5 2.25 3 4.5]
 serviceCap              = zeros(numSU,numChannel,Nsim);  % channel capacity:number of packets can be sent
 actualCap               = zeros(numSU,numChannel,Nsim);
-[ProbMatrix, stateProb] = rayleighMarkovModel( numSU,numChannel,Ptarget,avgSNR,dopplerFeq,packetTime);
+[ProbMatrix, stateProb] = rayleighMarkovModel( numSU,numChannel,Ptarget,avgSNR,dopplerFeq,packetTime,a,g,numChannelState);
 
 
 for iChannel = 1:numChannel

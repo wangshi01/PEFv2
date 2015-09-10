@@ -23,6 +23,10 @@ probFalseAlarm = [0.0661 0.0661; 0.0661 0.0661];
 busyToBusy=[.5 .5];
 freeToFree=[.5 .5];
 
+a = [274.7229  90.2514 67.6181 50.1222 53.3987 35.3508];
+g = [7.9932    3.4998  1.6883  0.6644  0.3756  0.09];
+numChannelState = 7;
+    
 BUSYSTATE = 1;
 FREESTATE = 2;
 ProbS1C1  = 0.1;
@@ -53,8 +57,8 @@ for iRate1=1:numRate1
                 probFalseAlarm,...                      % channel sensing false alarm ratio (numSU * numChannel)
                 probDistribution,...                    % channel resourse allocation probabilities (numSU * numChannel)
                 busyToBusy,freeToFree,...               % PU activity transmission probabilities (1 * numChannel)
-                Ptarget,avgSNR,dopplerFeq,packetTime... % channel condition state parameters (numSU * numChannel)
-                );
+                Ptarget,avgSNR,dopplerFeq,packetTime,... % channel condition state parameters (numSU * numChannel)
+                a,g,numChannelState);
             end
         end
     end
