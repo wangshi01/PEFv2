@@ -18,7 +18,7 @@ function [ performanceEF] = PEFv2( ...
 % rayleighMarkovModel
 
 %% parameters settings
-Nsim = 5000; % simulation length
+Nsim = 100000; % simulation length
 %% number of packets arrival ( numSU * Nsim )
 numArrival = zeros(numSU,Nsim);
 for iSU = 1:numSU
@@ -39,6 +39,7 @@ for iChannel = 1:numChannel
             [busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)]);   
     end
 end
+
 %% STEP 2: SU predict PU state predictedPUState(numSU * numChannel * Nsim)
 predictedPUState = ones(numSU,numChannel,Nsim);
 
@@ -49,6 +50,7 @@ for iSU = 1:numSU
         end
     end
 end
+
 %% STEP 3: channel condition state channelConditionState(numSU * numChannel * Nsim) & serviceCap(numSU * numChannel * Nsim) & actualCap(numSU * numChannel * Nsim)
 % initial state
 channelConditionState   = ones(numSU,numChannel,Nsim);
@@ -65,24 +67,26 @@ for iChannel = 1:numChannel
     end
 end
 
+
+
 channelDistribution = zeros(numSU,numChannel,Nsim);  % variable distribe how the channel allocated.
+p = rand(numChannel,Nsim);% random value to allocate the channel
+
 
 for iTS = 2:Nsim
     for iChannel = 1:numChannel
-        p = rand();
         prob = zeros(1,numSU);
         for iSU = 1:numSU
             prob(iSU+1) = prob(iSU) + probDistribution(iSU,iChannel);
-            if p > prob(iSU) && p < prob(iSU+1)
+            if p(iChannel,iTS) > prob(iSU) && p(iChannel,iTS) < prob(iSU+1)
                 channelDistribution(iSU,iChannel,iTS)=1;
-                continue;
+                break;
             end
         end
         for iSU = 1:numSU
             channelConditionState(iSU,iChannel,iTS) = ...
             nextState(StateNum,channelConditionState(iSU,iChannel,iTS-1),squeeze(ProbMatrix(iSU,iChannel,:,:)));
             serviceCap(iSU,iChannel,iTS) = StateToCap(channelConditionState(iSU,iChannel,iTS));
-
             if predictedPUState(iSU,iChannel,iTS) == BUSYSTATE
                 actualCap(iSU,iChannel,iTS) = 0;
             else
@@ -92,8 +96,10 @@ for iTS = 2:Nsim
     end
 end
 
+
 %% queue dynamic time slot by time slot
 % numLost,numReject,numInQueue,numDeparture,numWaste
+
 numInQueue   = zeros(numSU,Nsim);
 numReject    = zeros(numSU,Nsim);
 
@@ -136,6 +142,6 @@ for iTS=1:Nsim
     end
 end
 
-
 performanceEF=(sum(sum(sum(numLost)))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
+
 end

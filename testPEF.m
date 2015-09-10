@@ -14,7 +14,8 @@ avgSNR = [10 10; 10 10];
 vMS = 5/3.6; % speed of the mobile station :5km/h 
 carrierFeq = 5e9; % carrier fequency: 5GHz
 VELOCITYOFLIGHT=3e8;
-dopplerFeq = ((vMS*carrierFeq)/(VELOCITYOFLIGHT))*ones(numSU,numChannel); %dopplerFeq=(velocity of MS * carrier fequency/ velocity of light)
+dopplerFeq = ((vMS*carrierFeq)/(VELOCITYOFLIGHT))*ones(numSU,numChannel); 
+%dopplerFeq=(velocity of MS * carrier fequency/ velocity of light)
 packetTime = 2e-3*ones(numSU,numChannel);
 % sensing parameters
 probMissDetection = [0.0661 0.0661; 0.0661 0.0661];
@@ -31,8 +32,8 @@ BUSYSTATE = 1;
 FREESTATE = 2;
 ProbS1C1  = 0.1;
 ProbS1C2  = 0.5;
-% probDistribution = [ ProbS1C1 ProbS1C2; 1-ProbS1C1 1-ProbS1C2 ];
-% arrivalRate = [1 3];
+
+
 arrivalRate1=linspace(2,20,10);
 arrivalRate2=linspace(2,20,10);
 numRate1 = 10;

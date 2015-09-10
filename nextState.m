@@ -10,6 +10,7 @@ function currentState = nextState( numOfState, previousState, transProbMatrix)
        prob(i+1) = prob(i) + transProbMatrix(previousState,i);
        if p>prob(i) && p<=prob(i+1)
            currentState = i;
+           break;
        end
     end
 end
