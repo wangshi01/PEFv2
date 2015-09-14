@@ -1,5 +1,5 @@
 function [ ProbMatrix,...%( numSU * numChannel * numState * numState)
-    stateProb... %( numSU * numChannel * numState)
+    stateProb... %( 1 * numState)
     ] = rayleighMarkovModel(numSU,numChannel,Ptarget,avgSNR,DopplerFeq,PacketTime,a,g,numChannelState) % (numSU * numChannel)
 %rayleighMarkovModel Markov model of a rayleigh channel
 %   according to the HIPERLAN/2 setting given a target packet error rate, calculate the SNR boundary of each AMC mode
@@ -24,10 +24,12 @@ for iSU=1:numSU
         end
         for iState = 1:numState
             if iState<=numState-1
-                tp(iSU,iChannel,iState,iState+1)=transprob( stateProb(iSU,iChannel,iState),PacketTime(iSU,iChannel),ratioSNRboundaryToavgSNR(iState+1),DopplerFeq(iSU,iChannel));
+                tp(iSU,iChannel,iState,iState+1) = ...
+                transprob(stateProb(iSU,iChannel,iState),PacketTime(iSU,iChannel),ratioSNRboundaryToavgSNR(iState+1),DopplerFeq(iSU,iChannel));
             end
             if iState>=2
-                tp(iSU,iChannel,iState,iState-1)=transprob( stateProb(iSU,iChannel,iState),PacketTime(iSU,iChannel),ratioSNRboundaryToavgSNR(iState),DopplerFeq(iSU,iChannel));
+                tp(iSU,iChannel,iState,iState-1) =...
+                transprob( stateProb(iSU,iChannel,iState),PacketTime(iSU,iChannel),ratioSNRboundaryToavgSNR(iState),DopplerFeq(iSU,iChannel));
             end 
                 tp(iSU,iChannel,iState,iState)=1-sum(tp(iSU,iChannel,iState,:));
         end

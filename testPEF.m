@@ -46,6 +46,7 @@ for iRate1=1:numRate1
         arrivalRate=[arrivalRate1(iRate1) arrivalRate2(iRate2)]
         for iSU1 = 1:numSU1
             for iSU2 = 1:numSU2;
+                tic;
                 ProbS1C1 = (iSU1-1) * (0.1);
                 ProbS1C2 = (iSU2-1) * (0.1);
                 probDistribution = [ ProbS1C1 ProbS1C2; 1-ProbS1C1 1-ProbS1C2 ];
@@ -60,6 +61,7 @@ for iRate1=1:numRate1
                 busyToBusy,freeToFree,...               % PU activity transmission probabilities (1 * numChannel)
                 Ptarget,avgSNR,dopplerFeq,packetTime,... % channel condition state parameters (numSU * numChannel)
                 a,g,numChannelState);
+                toc;
             end
         end
     end

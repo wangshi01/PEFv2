@@ -28,19 +28,24 @@ end
 BUSYSTATE = 1;
 FREESTATE = 2;
 PUState   = ones(numChannel,Nsim);
+
  
 % init state
-initPUState = ones(numChannel,1); % set initial PU state = BUSYSTATE = 1;
-% calculate each state
-for iChannel = 1:numChannel
-    PUState(iChannel,1) = initPUState(iChannel);
-    for iTS = 2:Nsim
-        PUState(iChannel,iTS) = nextState(2, PUState(iChannel,iTS-1), ...
-            [busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)]);   
-    end
+% initPUState = ones(numChannel,1); % set initial PU state = BUSYSTATE = 1;
+% % calculate each state
+
+ for iChannel = 1:numChannel
+%     PUState(iChannel,1) = initPUState(iChannel);
+%     for iTS = 2:Nsim
+%         PUState(iChannel,iTS) = nextState(2, PUState(iChannel,iTS-1), ...
+%             [busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)]);   
+%     end
+    PUState(iChannel,:)=MarkovChainState(2,1,[busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)],Nsim);
 end
 
+
 %% STEP 2: SU predict PU state predictedPUState(numSU * numChannel * Nsim)
+
 predictedPUState = ones(numSU,numChannel,Nsim);
 
 for iSU = 1:numSU
@@ -58,21 +63,19 @@ StateNum                = 7;
 StateToCap              = [0 2 4 6 9 12 18];  %[0.5 1 1.5 2.25 3 4.5]
 serviceCap              = zeros(numSU,numChannel,Nsim);  % channel capacity:number of packets can be sent
 actualCap               = zeros(numSU,numChannel,Nsim);
+% calculate the transiton probability matrix and the probability of each state and the average length of each state.
 [ProbMatrix, stateProb] = rayleighMarkovModel( numSU,numChannel,Ptarget,avgSNR,dopplerFeq,packetTime,a,g,numChannelState);
 
+%simulate the channel state of SUs: channelConditionState(numSU * numChannel * Nsim)
 
 for iChannel = 1:numChannel
     for iSU = 1:numSU
-        channelConditionState(iSU,iChannel,1) = 1; % set the initial channel condition state =1
+        channelConditionState(iSU,iChannel,:) = MarkovChainState(StateNum,1,squeeze(ProbMatrix(iSU,iChannel,:,:)),Nsim); % set the initial channel condition state =1
     end
 end
 
-
-
 channelDistribution = zeros(numSU,numChannel,Nsim);  % variable distribe how the channel allocated.
 p = rand(numChannel,Nsim);% random value to allocate the channel
-
-
 for iTS = 2:Nsim
     for iChannel = 1:numChannel
         prob = zeros(1,numSU);
@@ -84,8 +87,8 @@ for iTS = 2:Nsim
             end
         end
         for iSU = 1:numSU
-            channelConditionState(iSU,iChannel,iTS) = ...
-            nextState(StateNum,channelConditionState(iSU,iChannel,iTS-1),squeeze(ProbMatrix(iSU,iChannel,:,:)));
+            % channelConditionState(iSU,iChannel,iTS) = ...
+            % nextState(StateNum,channelConditionState(iSU,iChannel,iTS-1),squeeze(ProbMatrix(iSU,iChannel,:,:)));
             serviceCap(iSU,iChannel,iTS) = StateToCap(channelConditionState(iSU,iChannel,iTS));
             if predictedPUState(iSU,iChannel,iTS) == BUSYSTATE
                 actualCap(iSU,iChannel,iTS) = 0;
