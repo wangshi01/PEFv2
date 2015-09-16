@@ -29,17 +29,9 @@ BUSYSTATE = 1;
 FREESTATE = 2;
 PUState   = ones(numChannel,Nsim);
 
- 
-% init state
-% initPUState = ones(numChannel,1); % set initial PU state = BUSYSTATE = 1;
-% % calculate each state
+% calculate each state
 
- for iChannel = 1:numChannel
-%     PUState(iChannel,1) = initPUState(iChannel);
-%     for iTS = 2:Nsim
-%         PUState(iChannel,iTS) = nextState(2, PUState(iChannel,iTS-1), ...
-%             [busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)]);   
-%     end
+for iChannel = 1:numChannel
     PUState(iChannel,:)=MarkovChainState(2,1,[busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)],Nsim);
 end
 
@@ -99,7 +91,6 @@ for iTS = 2:Nsim
     end
 end
 
-
 %% queue dynamic time slot by time slot
 % numLost,numReject,numInQueue,numDeparture,numWaste
 
@@ -122,6 +113,7 @@ for iTS=1:Nsim
                 numWaste(iSU,iChannel,iTS) = actualCap(iSU,iChannel,iTS) - numDeparture(iSU,iChannel,iTS);
                 if PUState(iChannel,iTS) == BUSYSTATE && predictedPUState(iChannel,iTS) == FREESTATE
                     numLost(iSU,iChannel,iTS)= numDeparture(iSU,iChannel,iTS);
+                    numDeparture(iSU,iChannel,iTS) = 0;
                 end
             end
         else
@@ -129,7 +121,8 @@ for iTS=1:Nsim
             for iChannel=1:numChannel
                 numDeparture(iSU,iChannel,iTS) = actualCap(iSU,iChannel,iTS);
                 if PUState(iChannel,iTS) == BUSYSTATE && predictedPUState(iChannel,iTS) == FREESTATE
-                    numLost(iSU,iChannel,iTS)= numDeparture(iSU,iChannel,iTS);
+                    numLost(iSU,iChannel,iTS) = numDeparture(iSU,iChannel,iTS);
+                    numDeparture(iSU,iChannel,iTS) = 0;
                 end
             end
         end
@@ -145,6 +138,6 @@ for iTS=1:Nsim
     end
 end
 
-performanceEF=(sum(sum(sum(numLost)))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
+performanceEF=(sum(sum(sum(numLost)))+sum(sum(sum(numDeparture)))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
 
 end
