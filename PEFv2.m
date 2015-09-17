@@ -6,19 +6,20 @@ function [ performanceEF] = PEFv2( ...
     probMissDetection,...                   % channel sensing miss detection ratio (numSU * numChannel)
     probFalseAlarm,...                      % channel sensing false alarm ratio (numSU * numChannel)
     probDistribution,...                    % channel resourse allocation probabilities (numSU * numChannel)
-    busyToBusy,freeToFree,...               % PU activity transmission probabilities (1 * numChannel)
-    Ptarget,avgSNR,dopplerFeq,packetTime,... % channel condition state parameters (numSU * numChannel)
+    busyToBusy,freeToFree,...               % PU activity transmission probabilities (numChannel * 1)
+    Ptarget,avgSNR,dopplerFeq,packetTime,...% channel condition state parameters (numSU * numChannel)
     a,g,numChannelState)
 % PEFv2 Calculate the performance evaluation function multi-user multi-channel
 %   debug version. parameter checked: ,numArrival,numInQueue,numDeparture,numLost,numReject,ProbMatrix,actualCap 
 %  change the way how channel is allocated.
 %% call function
-% nextState
-% predictChannel
-% rayleighMarkovModel
+% MarkovChainState.m
+% perdictChannel.m
+% rayleighMarkovModel.m
 
 %% parameters settings
 Nsim = 100000; % simulation length
+
 %% number of packets arrival ( numSU * Nsim )
 numArrival = zeros(numSU,Nsim);
 for iSU = 1:numSU
@@ -28,18 +29,14 @@ end
 BUSYSTATE = 1;
 FREESTATE = 2;
 PUState   = ones(numChannel,Nsim);
-
 % calculate each state
-
 for iChannel = 1:numChannel
     PUState(iChannel,:)=MarkovChainState(2,1,[busyToBusy(iChannel),1-freeToFree(iChannel);1-busyToBusy(iChannel),freeToFree(iChannel)],Nsim);
 end
 
 
 %% STEP 2: SU predict PU state predictedPUState(numSU * numChannel * Nsim)
-
 predictedPUState = ones(numSU,numChannel,Nsim);
-
 for iSU = 1:numSU
     for iChannel = 1:numChannel
         for iTS = 1:Nsim
@@ -51,15 +48,14 @@ end
 %% STEP 3: channel condition state channelConditionState(numSU * numChannel * Nsim) & serviceCap(numSU * numChannel * Nsim) & actualCap(numSU * numChannel * Nsim)
 % initial state
 channelConditionState   = ones(numSU,numChannel,Nsim);
-StateNum                = 7;
-StateToCap              = [0 2 4 6 9 12 18];  %[0.5 1 1.5 2.25 3 4.5]
+StateNum                = numChannelState;
+StateToCap              = [0 2 4 6 9 12 18];  %[0.5 1 1.5 2.25 3 4.5] channel capacity on channel state
 serviceCap              = zeros(numSU,numChannel,Nsim);  % channel capacity:number of packets can be sent
 actualCap               = zeros(numSU,numChannel,Nsim);
 % calculate the transiton probability matrix and the probability of each state and the average length of each state.
 [ProbMatrix, stateProb] = rayleighMarkovModel( numSU,numChannel,Ptarget,avgSNR,dopplerFeq,packetTime,a,g,numChannelState);
 
-%simulate the channel state of SUs: channelConditionState(numSU * numChannel * Nsim)
-
+% simulate the channel state of SUs: channelConditionState(numSU * numChannel * Nsim)
 for iChannel = 1:numChannel
     for iSU = 1:numSU
         channelConditionState(iSU,iChannel,:) = MarkovChainState(StateNum,1,squeeze(ProbMatrix(iSU,iChannel,:,:)),Nsim); % set the initial channel condition state =1
@@ -71,6 +67,7 @@ p = rand(numChannel,Nsim);% random value to allocate the channel
 for iTS = 2:Nsim
     for iChannel = 1:numChannel
         prob = zeros(1,numSU);
+        % allocate the channel. channelDistribution(i,j,t)=1:(i-th su j-th channel t-th time slot)
         for iSU = 1:numSU
             prob(iSU+1) = prob(iSU) + probDistribution(iSU,iChannel);
             if p(iChannel,iTS) > prob(iSU) && p(iChannel,iTS) < prob(iSU+1)
@@ -78,9 +75,8 @@ for iTS = 2:Nsim
                 break;
             end
         end
+        % calcualte the actual capacity of SU on each channel.
         for iSU = 1:numSU
-            % channelConditionState(iSU,iChannel,iTS) = ...
-            % nextState(StateNum,channelConditionState(iSU,iChannel,iTS-1),squeeze(ProbMatrix(iSU,iChannel,:,:)));
             serviceCap(iSU,iChannel,iTS) = StateToCap(channelConditionState(iSU,iChannel,iTS));
             if predictedPUState(iSU,iChannel,iTS) == BUSYSTATE
                 actualCap(iSU,iChannel,iTS) = 0;
@@ -92,24 +88,20 @@ for iTS = 2:Nsim
 end
 
 %% queue dynamic time slot by time slot
-% numLost,numReject,numInQueue,numDeparture,numWaste
-
-numInQueue   = zeros(numSU,Nsim);
-numReject    = zeros(numSU,Nsim);
-
-numDeparture = zeros(numSU,numChannel,Nsim);% packet depart at each channel
+numInQueue   = zeros(numSU,Nsim);           % number of packets in queue
+numReject    = zeros(numSU,Nsim);           % number of packets reject
+numDeparture = zeros(numSU,numChannel,Nsim);% number of packets successfully depart at each channel
 numWaste     = zeros(numSU,numChannel,Nsim);% capacity waste at each channel
 numLost      = zeros(numSU,numChannel,Nsim);% packet loss by collision
 
-% channel capability
-
-for iTS=1:Nsim
+for iTS = 1:Nsim
 %% packet departure and loss phase
-    for iSU=1:numSU 
-        if numInQueue(iSU,iTS) < sum(actualCap(iSU,:,iTS))% ÐÅÏ¢ÈÝÁ¿´óÓÚÊ£ÓàµÄpacketÊýÁ¿,°´ÕÕÐÅµÀÈÝÁ¿±ÈÀý£¬·ÖÅäËù·¢ËÍµÄpacket
+    for iSU = 1:numSU 
+        if numInQueue(iSU,iTS) < sum(actualCap(iSU,:,iTS))% if the capacity is larger than the number of packets in queue
             numInQueueAfterDeparture = 0;
+            % packets ditribute to channel proportional to the capacity of each channel
             for iChannel=1:numChannel
-                numDeparture(iSU,iChannel,iTS) = numInQueue(iSU,iTS).*(actualCap(iSU,iChannel,iTS)./sum(actualCap(iSU,:,iTS)));%departure °´ÕÕcapÔÚ¸÷¸öÐÅµÀµÄ±ÈÀý·ÖÅä
+                numDeparture(iSU,iChannel,iTS) = numInQueue(iSU,iTS).*(actualCap(iSU,iChannel,iTS)./sum(actualCap(iSU,:,iTS)));
                 numWaste(iSU,iChannel,iTS) = actualCap(iSU,iChannel,iTS) - numDeparture(iSU,iChannel,iTS);
                 if PUState(iChannel,iTS) == BUSYSTATE && predictedPUState(iChannel,iTS) == FREESTATE
                     numLost(iSU,iChannel,iTS)= numDeparture(iSU,iChannel,iTS);
@@ -118,7 +110,7 @@ for iTS=1:Nsim
             end
         else
             numInQueueAfterDeparture = numInQueue(iSU,iTS) - sum(actualCap(iSU,:,iTS));
-            for iChannel=1:numChannel
+            for iChannel = 1:numChannel
                 numDeparture(iSU,iChannel,iTS) = actualCap(iSU,iChannel,iTS);
                 if PUState(iChannel,iTS) == BUSYSTATE && predictedPUState(iChannel,iTS) == FREESTATE
                     numLost(iSU,iChannel,iTS) = numDeparture(iSU,iChannel,iTS);
@@ -126,7 +118,6 @@ for iTS=1:Nsim
                 end
             end
         end
-    
 %% packet arrival phase
         if numArrival(iSU,iTS) > bufferSize(iSU) - numInQueueAfterDeparture 
             numInQueue(iSU,iTS+1) = bufferSize(iSU);
@@ -138,6 +129,13 @@ for iTS=1:Nsim
     end
 end
 
-performanceEF=(sum(sum(sum(numLost)))+sum(sum(sum(numDeparture)))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
+% calculate the packet successfully depart but error.
+for iSU =1:numSU
+    for iChannel=1:numChannel
+        numError(iSU,iChannel)=Ptarget(iSU,iChannel)*sum(numDeparture(iSU,iChannel,:));
+    end
+end
+
+performanceEF=(sum(sum(sum(numLost)))+sum(sum(numError))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
 
 end

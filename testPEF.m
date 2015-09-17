@@ -29,7 +29,8 @@ dopplerFeq = ((vMS*carrierFeq)/(VELOCITYOFLIGHT))*ones(numSU,numChannel);
 % SU sensing parameters
 probMissDetection = [0.0661 0.0661; 0.0661 0.0661];
 probFalseAlarm = [0.0661 0.0661; 0.0661 0.0661];
-  
+
+% simulation setting structure definition
 settings= struct(...
     'numSU',numSU,...
     'numChannel',numChannel,...
@@ -48,23 +49,27 @@ settings= struct(...
     'probMissDetection',probMissDetection,...
     'probFalseAlarm',probFalseAlarm,...
     'arrivalRate',[2 2]);
+
+% set simulation settings
 arrivalRate1 = linspace(2,18,5);
 arrivalRate2 = linspace(2,18,5);
-for i=1:5
-    for j=1:5
-        iGroup=(i-1)*5+j
-        if iGroup==1
+for i = 1:5
+    for j = 1:5
+        iGroup = (i-1)*5+j;
+        if iGroup == 1
             continue;
         end
         settings(iGroup) = settings(iGroup-1);
         settings(iGroup).arrivalRate=[arrivalRate1(i) arrivalRate2(j)];
     end
 end
+
+% pef on probability of distribution definition 
 numSU1       = 11;
 numSU2       = 11;
-pef=zeros(100,numSU1,numSU2);
+pef=zeros(25,numSU1,numSU2);
 
-for iGroup=1:1    
+for iGroup = 1:1    
     for iSU1 = 1:numSU1
         for iSU2 = 1:numSU2;
             tic;
