@@ -1,4 +1,4 @@
-function [ performanceEF] = PEFv2( ...
+function [ performanceEF,pefError,pefLost,pefReject] = PEFv2( ...
     numSU,...                               % number of secondary user(1*1)
     numChannel,...                          % number of channel(1*1)
     arrivalRate,...                         % arrival rate of SU (1* numSU)
@@ -135,7 +135,13 @@ for iSU =1:numSU
         numError(iSU,iChannel)=Ptarget(iSU,iChannel)*sum(numDeparture(iSU,iChannel,:));
     end
 end
+for iSU = 1:numSU
+    pefError(iSU)=sum(numError(iSU,:))/Nsim;
+    pefReject(iSU)=sum(numReject(iSU,:))/Nsim;
+    pefLost(iSU)=sum(sum(numLost(iSU,:,:)))/Nsim;
+end
 
-performanceEF=(sum(sum(sum(numLost)))+sum(sum(numError))+sum(sum(numReject)))./Nsim; % performance evaluation function is expectation of paket loss rate + packet rejected number.
+performanceEF=(sum(sum(sum(numLost)))+sum(sum(numError))+sum(sum(numReject)))./Nsim; 
+% performance evaluation function is expectation of paket loss rate + packet rejected number.
 
 end

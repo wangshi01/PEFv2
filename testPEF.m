@@ -65,18 +65,20 @@ for i = 1:5
 end
 
 % pef on probability of distribution definition 
-numSU1       = 11;
-numSU2       = 11;
-pef=zeros(25,numSU1,numSU2);
-
+numSU1prob = 11;
+numSU2prob = 11;
+pef        = zeros(25,numSU1prob,numSU2prob);
+pefError   = zeros(25,numSU1prob,numSU2prob,numSU);
+pefLost    = zeros(25,numSU1prob,numSU2prob,numSU);
+pefReject  = zeros(25,numSU1prob,numSU2prob,numSU);
 for iGroup = 1:1    
-    for iSU1 = 1:numSU1
-        for iSU2 = 1:numSU2;
+    for iSU1 = 1:numSU1prob
+        for iSU2 = 1:numSU2prob;
             tic;
             ProbS1C1 = (iSU1-1) * (0.1);
             ProbS1C2 = (iSU2-1) * (0.1);
             probDistribution = [ ProbS1C1 ProbS1C2; 1-ProbS1C1 1-ProbS1C2 ];
-            pef(iGroup,iSU1,iSU2) = PEFv2( ...
+            [pef(iGroup,iSU1,iSU2),pefError(iGroup,iSU1,iSU2,:),pefLost(iGroup,iSU1,iSU2,:),pefReject(iGroup,iSU1,iSU2,:)]= PEFv2( ...
             settings(iGroup).numSU,...                              % number of secondary user(1*1)
             settings(iGroup).numChannel,...                         % number of channel(1*1)
             settings(iGroup).arrivalRate,...                        % arrival rate of SU (1* numSU)
